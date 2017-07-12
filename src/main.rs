@@ -75,6 +75,7 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
         buf = buf.chunks(8).flat_map(_expand_chunk).collect::<Vec<u8>>();
     }
 
+    // Convert greyscale to 1bpp
     if info.color_type == png::ColorType::GrayscaleAlpha || info.color_type == png::ColorType::Grayscale {
         buf = buf.chunks(8).flat_map(collapse_bits).collect::<Vec<u8>>();
     }
