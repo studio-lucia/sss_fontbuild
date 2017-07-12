@@ -9,6 +9,9 @@ use clap::{Arg, App};
 extern crate glob;
 use glob::{glob, Paths};
 
+extern crate byteorder;
+use byteorder::{BigEndian, WriteBytesExt};
+
 extern crate png;
 
 extern crate regex;
@@ -149,4 +152,6 @@ fn main() {
     }
     let target = matches.value_of("target").unwrap().to_string();
     let header_length = calculate_header_length(codepoints.len());
+    let mut header_length_bin : Vec<u8> = vec![];
+    header_length_bin.write_u16::<BigEndian>(header_length).unwrap();
 }
