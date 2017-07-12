@@ -15,4 +15,4 @@ clean:
 
 install: fontbuild
 	$(INSTALL) -d $(BINDIR)
-	$(INSTALL) fontbuild $(BINDIR)
+	$(INSTALL) target/release/fontbuild $(BINDIR)
