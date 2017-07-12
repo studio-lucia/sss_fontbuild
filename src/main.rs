@@ -118,6 +118,9 @@ fn main() {
                           .get_matches();
     let input_dir = matches.value_of("input_dir").unwrap().to_string();
     let input_path = Path::new(&input_dir);
+    let mut codepoints : Vec<u8> = vec![];
+    let mut imagedata : Vec<u8> = vec![];
+
     for file in list_tiles(input_path).unwrap().filter_map(Result::ok) {
         let codepoint;
         match parse_codepoint_from_filename(&file.to_string_lossy()) {
@@ -128,8 +131,15 @@ fn main() {
             }
         }
 
-        let bytes = decode_png(&file.as_path());
-        println!("Bytes: {:?}", bytes.unwrap());
+        codepoints.push(codepoint);
+
+        match decode_png(&file.as_path()) {
+            Ok(bytes) => imagedata.extend(bytes),
+            Err(e) => {
+                println!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e);
+                exit(1);
+            }
+        }
     }
     let target = matches.value_of("target").unwrap().to_string();
 }
