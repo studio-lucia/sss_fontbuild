@@ -58,6 +58,13 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
 
+    if info.color_type != png::ColorType::Indexed
+        && info.color_type != png::ColorType::GrayscaleAlpha
+        && info.color_type != png::ColorType::Grayscale {
+        return Err(io::Error::new(io::ErrorKind::InvalidData,
+            format!("Invalid colour format - only greyscale or indexed are supported")));
+    }
+
     // Drop the alpha channel
     if info.color_type == png::ColorType::GrayscaleAlpha {
         buf = buf.chunks(2).map(|a| a[1]).collect::<Vec<u8>>();
