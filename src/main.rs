@@ -98,6 +98,12 @@ fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
     return Ok(captures[1].parse().unwrap());
 }
 
+fn calculate_header_length(number_of_codepoints : usize) -> u16 {
+    // Size of the header length portion of the header plus
+    // size of the codepoint segment (fixed-width 2-byte pairs)
+    return 2 + (2 * number_of_codepoints as u16);
+}
+
 fn main() {
     let matches = App::new("fontbuild")
                           .version("0.1.0")
@@ -142,4 +148,5 @@ fn main() {
         }
     }
     let target = matches.value_of("target").unwrap().to_string();
+    let header_length = calculate_header_length(codepoints.len());
 }
