@@ -75,7 +75,13 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
 
     // Drop the alpha channel
     if info.color_type == png::ColorType::GrayscaleAlpha {
-        buf = buf.chunks(2).map(|a| a[1]).collect::<Vec<u8>>();
+        buf = buf
+            // In every pair of bytes, 0 is alpha, 1 is the pixel.
+            .chunks(2).map(|a| a[1])
+            // In a transparent image, the colour of the font/background
+            // is reverse from what we want. Need to invert it.
+            .map(|c| !c)
+            .collect::<Vec<u8>>();
     }
 
     // Expand from 8x16 to 16x16
