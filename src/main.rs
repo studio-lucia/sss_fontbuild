@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io;
+use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::exit;
@@ -149,11 +150,14 @@ fn main() {
                               .index(2))
                           .arg(Arg::with_name("append")
                               .short("a")
+                              .long("append")
                               .help("Append extra data to the end of the file")
-                              .required(false))
+                              .required(false)
+                              .takes_value(true))
                           .get_matches();
     let input_dir = matches.value_of("input_dir").unwrap().to_string();
     let input_path = Path::new(&input_dir);
+
     let target = matches.value_of("target").unwrap().to_string();
     let mut target_file;
     match File::create(&target) {
@@ -162,6 +166,25 @@ fn main() {
             println!("Unable to open target file {}!\n{}", target, e);
             exit(1);
         }
+    }
+
+    let mut append_data : Vec<u8>;
+    match matches.value_of("append") {
+        Some(append) => {
+            let append_file;
+            match File::open(append) {
+                Ok(f) => append_file = f,
+                Err(e) => {
+                    println!("Unable to open append file {}!\n{}", append, e);
+                    exit(1);
+                }
+            }
+
+            let mut buf_reader = BufReader::new(append_file);
+            append_data = vec![];
+            buf_reader.read_to_end(&mut append_data).unwrap();
+        },
+        None => append_data = vec![],
     }
 
     let mut codepoints : Vec<u8> = vec![];
@@ -193,4 +216,5 @@ fn main() {
     target_file.write_all(&header_length_bin).unwrap();
     target_file.write_all(&generate_codepoint_table(codepoints)).unwrap();
     target_file.write_all(&imagedata).unwrap();
+    target_file.write_all(&append_data).unwrap();
 }
