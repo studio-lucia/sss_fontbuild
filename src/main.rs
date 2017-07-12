@@ -127,6 +127,16 @@ fn main() {
                           .get_matches();
     let input_dir = matches.value_of("input_dir").unwrap().to_string();
     let input_path = Path::new(&input_dir);
+    let target = matches.value_of("target").unwrap().to_string();
+    let mut target_file;
+    match File::create(&target) {
+        Ok(f) => target_file = f,
+        Err(e) => {
+            println!("Unable to open target file {}!\n{}", target, e);
+            exit(1);
+        }
+    }
+
     let mut codepoints : Vec<u8> = vec![];
     let mut imagedata : Vec<u8> = vec![];
 
@@ -150,7 +160,6 @@ fn main() {
             }
         }
     }
-    let target = matches.value_of("target").unwrap().to_string();
     let header_length = calculate_header_length(codepoints.len());
     let mut header_length_bin : Vec<u8> = vec![];
     header_length_bin.write_u16::<BigEndian>(header_length).unwrap();
