@@ -31,7 +31,7 @@ fn list_tiles(input_dir : &Path) -> Result<Paths, String> {
 fn _expand_chunk(input : &[u8]) -> Vec<u8> {
     let mut v = vec![];
     v.extend(input);
-    v.resize(16, 0);
+    v.resize(16, 255);
 
     return v
 }
