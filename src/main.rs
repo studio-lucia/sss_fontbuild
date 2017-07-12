@@ -36,6 +36,14 @@ fn _expand_chunk(input : &[u8]) -> Vec<u8> {
     return v
 }
 
+fn _reverse_chunk(input : &[u8]) -> Vec<u8> {
+    let mut v = vec![];
+    v.extend(input);
+    v.reverse();
+
+    return v;
+}
+
 fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
     if !bytes.len() == 8 {
         return Err(format!("Input must be 8 bytes long ({} elements provided)", bytes.len()));
@@ -83,6 +91,12 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
             .map(|c| !c)
             .collect::<Vec<u8>>();
     }
+
+    // Reverse the horizontal order of pixels.
+    // The order returned by a given PNG is the opposite of what Lunar expects.
+    buf = buf.chunks(info.width as usize)
+        .flat_map(_reverse_chunk)
+        .collect::<Vec<u8>>();
 
     // Expand from 8x16 to 16x16
     if info.width == 8 {
