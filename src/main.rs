@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::path::Path;
+use std::process::exit;
 
 extern crate clap;
 use clap::{Arg, App};
@@ -9,6 +10,9 @@ extern crate glob;
 use glob::{glob, Paths};
 
 extern crate png;
+
+extern crate regex;
+use regex::Regex;
 
 fn list_tiles(input_dir : &Path) -> Result<Paths, String> {
     if !input_dir.exists() {
@@ -83,6 +87,17 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     return Ok(buf);
 }
 
+fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
+    let filename = String::from(filename);
+    let re = Regex::new(r"(\d*)\.png$").unwrap();
+    if !re.is_match(&filename) {
+        return Err(format!("Unable to parse codepoint from filename: {}", filename));
+    }
+
+    let captures = re.captures(&filename).unwrap();
+    return Ok(captures[1].parse().unwrap());
+}
+
 fn main() {
     let matches = App::new("fontbuild")
                           .version("0.1.0")
@@ -104,6 +119,15 @@ fn main() {
     let input_dir = matches.value_of("input_dir").unwrap().to_string();
     let input_path = Path::new(&input_dir);
     for file in list_tiles(input_path).unwrap().filter_map(Result::ok) {
+        let codepoint;
+        match parse_codepoint_from_filename(&file.to_string_lossy()) {
+            Ok(val) => codepoint = val,
+            Err(e) => {
+                println!("{}", e);
+                exit(1);
+            }
+        }
+
         let bytes = decode_png(&file.as_path());
         println!("Bytes: {:?}", bytes.unwrap());
     }
