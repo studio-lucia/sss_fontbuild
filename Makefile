@@ -3,11 +3,11 @@ INSTALL := install
 PREFIX := /usr/local
 BINDIR := $(PREFIX)/bin
 
-.PHONY: all fontbuild clean install
+.PHONY: all sss_fontbuild clean install
 
-all: fontbuild
+all: sss_fontbuild
 
-fontbuild:
+sss_fontbuild:
 	cargo build --release
 
 clean:
@@ -15,4 +15,4 @@ clean:
 
 install: fontbuild
 	$(INSTALL) -d $(BINDIR)
-	$(INSTALL) target/release/fontbuild $(BINDIR)
+	$(INSTALL) target/release/sss_fontbuild $(BINDIR)
