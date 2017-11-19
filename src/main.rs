@@ -64,6 +64,19 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
     return Ok(result);
 }
 
+fn _rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
+    let bytes_vec = bytes.to_vec();
+    if bytes_vec == vec![217, 217, 217] {
+        return Vec::from(BITS_GREY.iter().as_slice().clone());
+    } else if bytes_vec == vec![0, 16, 64] {
+        return Vec::from(BITS_DARK_BLUE.iter().as_slice().clone());
+    } else if bytes_vec == vec![128, 128, 176] {
+        return Vec::from(BITS_LIGHT_BLUE.iter().as_slice().clone());
+    } else {
+        return Vec::from(BITS_TRANSPARENT.iter().as_slice().clone());
+    }
+}
+
 fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     let decoder = png::Decoder::new(File::open(input)?);
     let (info, mut reader) = decoder.read_info()?;
@@ -96,9 +109,16 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
         .flat_map(_reverse_chunk)
         .collect::<Vec<u8>>();
 
-    // TODO: map colours
+    // Match R,G,B pixel values to the 2-bit values that Lunar uses
+    let bit_values : Vec<u8> = buf.chunks(3)
+       .flat_map(_rgb_to_2bit)
+       .collect();
+    // Take our big Vec of bit values and collapse that down into bytes
+    let output_bytes : Vec<u8> = bit_values.chunks(8)
+       .flat_map(collapse_bits)
+       .collect();
 
-    return Ok(buf);
+    return Ok(output_bytes);
 }
 
 fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
