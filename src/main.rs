@@ -133,7 +133,7 @@ fn main() {
     let matches = App::new("fontbuild")
                           .version("0.1.0")
                           .author("Misty De Meo")
-                          .about("Rebuild font files for Magical School Lunar!")
+                          .about("Rebuild font files for Lunar: Silver Star Story")
                           .arg(Arg::with_name("input_dir")
                               .help("Path to tiles to insert")
                               .required(true)
