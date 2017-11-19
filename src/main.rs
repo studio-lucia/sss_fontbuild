@@ -74,21 +74,20 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
 
-    if info.color_type != png::ColorType::Indexed
-        && info.color_type != png::ColorType::GrayscaleAlpha
-        && info.color_type != png::ColorType::Grayscale {
-        return Err(io::Error::new(io::ErrorKind::InvalidData,
-            format!("Invalid colour format - only greyscale or indexed are supported")));
+    match info.color_type {
+        png::ColorType::RGB => {},
+        png::ColorType::RGBA => {},
+        _ => {
+            return Err(io::Error::new(io::ErrorKind::InvalidData,
+                format!("Invalid colour format - only RGB is supported")));
+        }
     }
 
     // Drop the alpha channel
-    if info.color_type == png::ColorType::GrayscaleAlpha {
+    if info.color_type == png::ColorType::RGBA {
         buf = buf
-            // In every pair of bytes, 0 is alpha, 1 is the pixel.
-            .chunks(2).map(|a| a[1])
-            // In a transparent image, the colour of the font/background
-            // is reverse from what we want. Need to invert it.
-            .map(|c| !c)
+            // In every set of four bytes, the fourth is the alpha
+            .chunks(4).flat_map(|a| vec![a[0], a[1], a[2]])
             .collect::<Vec<u8>>();
     }
 
@@ -98,10 +97,7 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
         .flat_map(_reverse_chunk)
         .collect::<Vec<u8>>();
 
-    // Convert greyscale to 1bpp
-    if info.color_type == png::ColorType::GrayscaleAlpha || info.color_type == png::ColorType::Grayscale {
-        buf = buf.chunks(8).flat_map(collapse_bits).collect::<Vec<u8>>();
-    }
+    // TODO: map colours
 
     return Ok(buf);
 }
