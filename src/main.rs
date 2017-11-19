@@ -11,9 +11,6 @@ use clap::{Arg, App};
 extern crate glob;
 use glob::{glob, Paths};
 
-extern crate byteorder;
-use byteorder::{BigEndian, WriteBytesExt};
-
 extern crate png;
 
 extern crate regex;
@@ -132,18 +129,6 @@ fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
     return Ok(captures[1].parse().unwrap());
 }
 
-fn calculate_header_length(number_of_codepoints : usize) -> u16 {
-    // Size of the header length portion of the header plus
-    // size of the codepoint segment (fixed-width 2-byte pairs)
-    return 2 + (2 * number_of_codepoints as u16);
-}
-
-// Codepoints are assumed to be two-byte sequences; to support
-// single-byte codepoints, we prepend 00 to each of them.
-fn generate_codepoint_table(codepoints : Vec<u8>) -> Vec<u8> {
-    return codepoints.iter().flat_map(|c| vec![0, *c]).collect::<Vec<u8>>();
-}
-
 fn main() {
     let matches = App::new("fontbuild")
                           .version("0.1.0")
@@ -219,11 +204,6 @@ fn main() {
             }
         }
     }
-    let header_length = calculate_header_length(codepoints.len());
-    let mut header_length_bin : Vec<u8> = vec![];
-    header_length_bin.write_u16::<BigEndian>(header_length).unwrap();
-    target_file.write_all(&header_length_bin).unwrap();
-    target_file.write_all(&generate_codepoint_table(codepoints)).unwrap();
     target_file.write_all(&imagedata).unwrap();
     target_file.write_all(&append_data).unwrap();
 }
