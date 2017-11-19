@@ -100,20 +100,20 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
         }
     }
 
-    // Reverse the horizontal order of pixels.
-    // The order returned by a given PNG is the opposite of what Lunar expects.
-    buf = buf.chunks(info.width as usize)
-        .flat_map(_reverse_chunk)
-        .collect::<Vec<u8>>();
-
     // Match R,G,B pixel values to the 2-bit values that Lunar uses
     let bit_values : Vec<u8> = buf.chunks(3)
        .flat_map(_rgb_to_2bit)
        .collect();
     // Take our big Vec of bit values and collapse that down into bytes
-    let output_bytes : Vec<u8> = bit_values.chunks(8)
+    let mut output_bytes : Vec<u8> = bit_values.chunks(8)
        .flat_map(collapse_bits)
        .collect();
+
+    // Reverse the horizontal order of pixels.
+    // The order returned by a given PNG is the opposite of what Lunar expects.
+    output_bytes = output_bytes.chunks(info.width as usize)
+        .flat_map(_reverse_chunk)
+        .collect::<Vec<u8>>();
 
     return Ok(output_bytes);
 }
