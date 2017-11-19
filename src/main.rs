@@ -63,7 +63,7 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
 
 fn _rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
     let bytes_vec = bytes.to_vec();
-    if bytes_vec == vec![217, 217, 217] {
+    if bytes_vec == vec![217, 217, 217] || bytes_vec == vec![216, 216, 216] {
         return Vec::from(BITS_GREY.iter().as_slice().clone());
     } else if bytes_vec == vec![0, 16, 64] {
         return Vec::from(BITS_DARK_BLUE.iter().as_slice().clone());
