@@ -103,6 +103,15 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     // Match R,G,B pixel values to the 2-bit values that Lunar uses
     let bit_values : Vec<u8> = buf.chunks(3)
        .flat_map(_rgb_to_2bit)
+       .collect::<Vec<u8>>()
+       // Flip each quarter of the image
+       .chunks(128).rev().flat_map(|a| a).cloned()
+       .collect::<Vec<u8>>()
+       // Flip the image vertically; a row of 32 bits is 16 pixels
+       .chunks(32).rev().flat_map(|a| a).cloned()
+       .collect::<Vec<u8>>()
+       // Flip each line horizontally
+       .chunks(32).flat_map(|slice| slice.chunks(2).rev().flat_map(|a| a).cloned())
        .collect();
     // Take our big Vec of bit values and collapse that down into bytes
     let mut output_bytes : Vec<u8> = bit_values.chunks(8)
