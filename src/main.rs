@@ -115,6 +115,9 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
         .flat_map(_reverse_chunk)
         .collect::<Vec<u8>>();
 
+    // 256 pixels per 16x16 glyph, with four pixels per byte, should be 64
+    debug_assert!(output_bytes.len() == 64);
+
     return Ok(output_bytes);
 }
 
