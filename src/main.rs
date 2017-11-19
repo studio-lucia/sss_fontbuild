@@ -54,12 +54,12 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
         let mask = (1 as u8) << i;
 
         // Are we setting this bit to 0 or 1?
-        // We're assuming greyscale input with only two colours,
-        // so values are expected to be 0 or 255.
-        if *byte == 0 {
-            result |= mask;
-        } else {
-            result &= !mask;
+        match *byte {
+            0 => result |= mask,
+            1 => result &= !mask,
+            _ => {
+                return Err(format!("Bits must be either 0 or 1 (value was {})", *byte));
+            }
         }
     }
     return Ok(result);
