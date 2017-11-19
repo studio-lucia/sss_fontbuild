@@ -36,14 +36,6 @@ fn list_tiles(input_dir : &Path) -> Result<Paths, String> {
     }
 }
 
-fn _expand_chunk(input : &[u8]) -> Vec<u8> {
-    let mut v = vec![];
-    v.extend(input);
-    v.resize(16, 255);
-
-    return v
-}
-
 fn _reverse_chunk(input : &[u8]) -> Vec<u8> {
     let mut v = vec![];
     v.extend(input);
@@ -105,11 +97,6 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     buf = buf.chunks(info.width as usize)
         .flat_map(_reverse_chunk)
         .collect::<Vec<u8>>();
-
-    // Expand from 8x16 to 16x16
-    if info.width == 8 {
-        buf = buf.chunks(8).flat_map(_expand_chunk).collect::<Vec<u8>>();
-    }
 
     // Convert greyscale to 1bpp
     if info.color_type == png::ColorType::GrayscaleAlpha || info.color_type == png::ColorType::Grayscale {
