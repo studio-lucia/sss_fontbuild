@@ -75,20 +75,19 @@ fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
     reader.next_frame(&mut buf)?;
 
     match info.color_type {
+        // RGB is fine as-is
         png::ColorType::RGB => {},
-        png::ColorType::RGBA => {},
+        // Drop the alpha channel
+        png::ColorType::RGBA => {
+            buf = buf
+                // In every set of four bytes, the fourth is the alpha
+                .chunks(4).flat_map(|a| vec![a[0], a[1], a[2]])
+                .collect::<Vec<u8>>();
+        },
         _ => {
             return Err(io::Error::new(io::ErrorKind::InvalidData,
                 format!("Invalid colour format - only RGB is supported")));
         }
-    }
-
-    // Drop the alpha channel
-    if info.color_type == png::ColorType::RGBA {
-        buf = buf
-            // In every set of four bytes, the fourth is the alpha
-            .chunks(4).flat_map(|a| vec![a[0], a[1], a[2]])
-            .collect::<Vec<u8>>();
     }
 
     // Reverse the horizontal order of pixels.
