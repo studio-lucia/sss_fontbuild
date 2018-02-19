@@ -207,7 +207,7 @@ main!(|args: Opt| {
 
             let mut buf_reader = BufReader::new(append_file);
             append_data = vec![];
-            buf_reader.read_to_end(&mut append_data).unwrap();
+            buf_reader.read_to_end(&mut append_data)?;
         },
         None => append_data = vec![],
     }
@@ -215,16 +215,8 @@ main!(|args: Opt| {
     let mut codepoints : Vec<u8> = vec![];
     let mut imagedata : Vec<u8> = vec![];
 
-    for file in list_tiles(&args.input).unwrap().filter_map(Result::ok) {
-        let codepoint;
-        match parse_codepoint_from_filename(&file.to_string_lossy()) {
-            Ok(val) => codepoint = val,
-            Err(e) => {
-                println!("{}", e);
-                exit(1);
-            }
-        }
-
+    for file in list_tiles(&args.input)?.filter_map(Result::ok) {
+        let codepoint = parse_codepoint_from_filename(&file.to_string_lossy())?;
         codepoints.push(codepoint);
 
         match decode_png(&file) {
@@ -237,9 +229,9 @@ main!(|args: Opt| {
     }
 
     if args.compress {
-        write_compressed(imagedata, &target_file).unwrap();
+        write_compressed(imagedata, &target_file)?;
     } else {
-        write_uncompressed(imagedata, &target_file).unwrap();
+        write_uncompressed(imagedata, &target_file)?;
     }
-    target_file.write_all(&append_data).unwrap();
+    target_file.write_all(&append_data)?;
 });
