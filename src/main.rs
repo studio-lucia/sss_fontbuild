@@ -5,6 +5,9 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::exit;
 
+extern crate sss_fontbuild;
+use sss_fontbuild::errors::FontCreationError;
+
 extern crate glob;
 use glob::{glob, Paths};
 
@@ -42,13 +45,13 @@ struct Opt {
     compress: bool,
 }
 
-fn list_tiles(input_dir : &PathBuf) -> Result<Paths, String> {
+fn list_tiles(input_dir : &PathBuf) -> Result<Paths, FontCreationError> {
     if !input_dir.exists() {
-        return Err(format!("Directory does not exist: {}", input_dir.to_string_lossy()));
+        return Err(FontCreationError::new(format!("Directory does not exist: {}", input_dir.to_string_lossy())));
     }
     match glob(&input_dir.join("*.png").to_string_lossy()) {
         Ok(glob) => return Ok(glob),
-        Err(e) => return Err(format!("Error listing files: {}", e)),
+        Err(e) => return Err(FontCreationError::new(format!("Error listing files: {}", e))),
     }
 }
 
@@ -60,9 +63,9 @@ fn _reverse_chunk(input : &[u8]) -> Vec<u8> {
     return v;
 }
 
-fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
+fn collapse_bits(bytes : &[u8]) -> Result<u8, FontCreationError> {
     if !bytes.len() == 8 {
-        return Err(format!("Input must be 8 bytes long ({} elements provided)", bytes.len()));
+        return Err(FontCreationError::new(format!("Input must be 8 bytes long ({} elements provided)", bytes.len())));
     }
     let mut result = 0;
     for (i, byte) in bytes.iter().enumerate() {
@@ -73,7 +76,7 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, String> {
             0 => result |= mask,
             1 => result &= !mask,
             _ => {
-                return Err(format!("Bits must be either 0 or 1 (value was {})", *byte));
+                return Err(FontCreationError::new(format!("Bits must be either 0 or 1 (value was {})", *byte)));
             }
         }
     }
@@ -149,11 +152,11 @@ fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
     return Ok(output_bytes);
 }
 
-fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
+fn parse_codepoint_from_filename(filename : &str) -> Result<u8, FontCreationError> {
     let filename = String::from(filename);
     let re = Regex::new(r"(\d*)\.png$").unwrap();
     if !re.is_match(&filename) {
-        return Err(format!("Unable to parse codepoint from filename: {}", filename));
+        return Err(FontCreationError::new(format!("Unable to parse codepoint from filename: {}", filename)));
     }
 
     let captures = re.captures(&filename).unwrap();
