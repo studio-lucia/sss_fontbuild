@@ -2,16 +2,18 @@ use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
-
-extern crate clap;
-use clap::{Arg, App};
 
 extern crate glob;
 use glob::{glob, Paths};
 
 extern crate png;
+
+#[macro_use] extern crate quicli;
+use quicli::prelude::*;
+// Import this here to clobber quicli's custom Result with the default one
+use std::result::Result;
 
 extern crate regex;
 use regex::Regex;
@@ -25,7 +27,22 @@ const BITS_GREY        : [u8; 2] = [0, 1];
 const BITS_DARK_BLUE   : [u8; 2] = [0, 0];
 const BITS_LIGHT_BLUE  : [u8; 2] = [1, 0];
 
-fn list_tiles(input_dir : &Path) -> Result<Paths, String> {
+#[derive(StructOpt, Debug)]
+struct Opt {
+    #[structopt(help = "Path to tiles to insert", parse(from_os_str))]
+    input: PathBuf,
+    #[structopt(help = "Font file to write to", parse(from_os_str))]
+    target: PathBuf,
+    #[structopt(short = "a", long = "append",
+                help = "Append extra data to the end of the file",
+                parse(from_os_str))]
+    append: Option<PathBuf>,
+    #[structopt(short = "c", long = "compress",
+                help = "Compress the generated data using Sega's CMP")]
+    compress: bool,
+}
+
+fn list_tiles(input_dir : &PathBuf) -> Result<Paths, String> {
     if !input_dir.exists() {
         return Err(format!("Directory does not exist: {}", input_dir.to_string_lossy()));
     }
@@ -76,8 +93,8 @@ fn _rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
     }
 }
 
-fn decode_png(input : &Path) -> Result<Vec<u8>, io::Error> {
-    let decoder = png::Decoder::new(File::open(input)?);
+fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
+    let decoder = png::Decoder::new(File::open(&input)?);
     let (info, mut reader) = decoder.read_info()?;
     if info.height != 16 || !(info.width == 8 || info.width == 16) {
         return Err(io::Error::new(io::ErrorKind::InvalidData,
@@ -163,53 +180,24 @@ fn write_uncompressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<(), 
     return Ok(());
 }
 
-fn main() {
-    let matches = App::new("fontbuild")
-                          .version("0.1.0")
-                          .author("Misty De Meo")
-                          .about("Rebuild font files for Lunar: Silver Star Story")
-                          .arg(Arg::with_name("input_dir")
-                              .help("Path to tiles to insert")
-                              .required(true)
-                              .index(1))
-                          .arg(Arg::with_name("target")
-                              .help("Font file to write to")
-                              .required(true)
-                              .index(2))
-                          .arg(Arg::with_name("append")
-                              .short("a")
-                              .long("append")
-                              .help("Append extra data to the end of the file")
-                              .required(false)
-                              .takes_value(true))
-                          .arg(Arg::with_name("compress")
-                              .short("c")
-                              .long("compress")
-                              .help("Compress the generated data using Sega's CMP")
-                              .required(false)
-                              .takes_value(false))
-                          .get_matches();
-    let input_dir = matches.value_of("input_dir").unwrap().to_string();
-    let input_path = Path::new(&input_dir);
-
-    let target = matches.value_of("target").unwrap().to_string();
+main!(|args: Opt| {
     let mut target_file;
-    match File::create(&target) {
+    match File::create(&args.target) {
         Ok(f) => target_file = f,
         Err(e) => {
-            println!("Unable to open target file {}!\n{}", target, e);
+            println!("Unable to open target file {}!\n{}", args.target.to_string_lossy(), e);
             exit(1);
         }
     }
 
     let mut append_data : Vec<u8>;
-    match matches.value_of("append") {
+    match args.append {
         Some(append) => {
             let append_file;
-            match File::open(append) {
+            match File::open(&append) {
                 Ok(f) => append_file = f,
                 Err(e) => {
-                    println!("Unable to open append file {}!\n{}", append, e);
+                    println!("Unable to open append file {}!\n{}", append.to_string_lossy(), e);
                     exit(1);
                 }
             }
@@ -224,7 +212,7 @@ fn main() {
     let mut codepoints : Vec<u8> = vec![];
     let mut imagedata : Vec<u8> = vec![];
 
-    for file in list_tiles(input_path).unwrap().filter_map(Result::ok) {
+    for file in list_tiles(&args.input).unwrap().filter_map(Result::ok) {
         let codepoint;
         match parse_codepoint_from_filename(&file.to_string_lossy()) {
             Ok(val) => codepoint = val,
@@ -236,7 +224,7 @@ fn main() {
 
         codepoints.push(codepoint);
 
-        match decode_png(&file.as_path()) {
+        match decode_png(&file) {
             Ok(bytes) => imagedata.extend(bytes),
             Err(e) => {
                 println!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e);
@@ -245,10 +233,10 @@ fn main() {
         }
     }
 
-    if matches.is_present("compress") {
+    if args.compress {
         write_compressed(imagedata, &target_file).unwrap();
     } else {
         write_uncompressed(imagedata, &target_file).unwrap();
     }
     target_file.write_all(&append_data).unwrap();
-}
+});
