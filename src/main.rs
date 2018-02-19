@@ -16,6 +16,8 @@ extern crate png;
 extern crate regex;
 use regex::Regex;
 
+extern crate sega_cmp;
+
 // Each pixel is two bits; there are four pixels in each byte.
 // This provides mappings between the colour value and its definition in bits.
 const BITS_TRANSPARENT : [u8; 2] = [1, 1];
@@ -141,6 +143,26 @@ fn parse_codepoint_from_filename(filename : &str) -> Result<u8, String> {
     return Ok(captures[1].parse().unwrap());
 }
 
+fn write_compressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<(), std::io::Error> {
+    let header = sega_cmp::create_header(imagedata.len() as i32, sega_cmp::Size::Byte);
+    let compressed; 
+    match sega_cmp::compress(&imagedata, sega_cmp::Size::Byte) {
+        Ok(d) => compressed = d,
+        Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::Other,
+                                                 format!("{}", e))),
+    }
+
+    target_file.write_all(&header)?;
+    target_file.write_all(&compressed)?;
+    return Ok(());
+}
+
+fn write_uncompressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<(), std::io::Error> {
+    target_file.write_all(&imagedata)?;
+
+    return Ok(());
+}
+
 fn main() {
     let matches = App::new("fontbuild")
                           .version("0.1.0")
@@ -160,6 +182,12 @@ fn main() {
                               .help("Append extra data to the end of the file")
                               .required(false)
                               .takes_value(true))
+                          .arg(Arg::with_name("compress")
+                              .short("c")
+                              .long("compress")
+                              .help("Compress the generated data using Sega's CMP")
+                              .required(false)
+                              .takes_value(false))
                           .get_matches();
     let input_dir = matches.value_of("input_dir").unwrap().to_string();
     let input_path = Path::new(&input_dir);
@@ -216,6 +244,11 @@ fn main() {
             }
         }
     }
-    target_file.write_all(&imagedata).unwrap();
+
+    if matches.is_present("compress") {
+        write_compressed(imagedata, &target_file).unwrap();
+    } else {
+        write_uncompressed(imagedata, &target_file).unwrap();
+    }
     target_file.write_all(&append_data).unwrap();
 }
