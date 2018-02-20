@@ -24,7 +24,7 @@ pub fn list_tiles(input_dir : &PathBuf) -> Result<Paths, FontCreationError> {
     }
 }
 
-fn _reverse_chunk(input : &[u8]) -> Vec<u8> {
+fn reverse_chunk(input : &[u8]) -> Vec<u8> {
     let mut v = vec![];
     v.extend(input);
     v.reverse();
@@ -52,7 +52,7 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, FontCreationError> {
     return Ok(result);
 }
 
-fn _rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
+fn rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
     let bytes_vec = bytes.to_vec();
     if bytes_vec == vec![217, 217, 217] || bytes_vec == vec![216, 216, 216] {
         return Vec::from(BITS_GREY.iter().as_slice().clone());
@@ -93,7 +93,7 @@ pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
 
     // Match R,G,B pixel values to the 2-bit values that Lunar uses
     let bit_values : Vec<u8> = buf.chunks(3)
-       .flat_map(_rgb_to_2bit)
+       .flat_map(rgb_to_2bit)
        .collect::<Vec<u8>>()
        // Flip each quarter of the image
        .chunks(128).rev().flat_map(|a| a).cloned()
@@ -112,7 +112,7 @@ pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
     // Reverse the horizontal order of pixels.
     // The order returned by a given PNG is the opposite of what Lunar expects.
     output_bytes = output_bytes.chunks(info.width as usize)
-        .flat_map(_reverse_chunk)
+        .flat_map(reverse_chunk)
         .collect::<Vec<u8>>();
 
     // 256 pixels per 16x16 glyph, with four pixels per byte, should be 64
