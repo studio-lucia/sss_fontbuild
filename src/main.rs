@@ -57,7 +57,7 @@ fn main_create(args: Opt) -> quicli::prelude::Result<()> {
     return Ok(());
 }
 
-fn main_append(args: Opt) -> quicli::prelude::Result<()> {
+fn main_insert(args: Opt) -> quicli::prelude::Result<()> {
     let game;
     let target_size = args.target.metadata()?.len();
     match target_size {
@@ -85,7 +85,7 @@ fn main_append(args: Opt) -> quicli::prelude::Result<()> {
 
 main!(|args: Opt| {
     if args.insert {
-        main_append(args)?;
+        main_insert(args)?;
     } else {
         main_create(args)?;
     }
