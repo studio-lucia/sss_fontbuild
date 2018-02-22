@@ -45,21 +45,7 @@ fn main_create(args: Opt) -> quicli::prelude::Result<()> {
         None => append_data = vec![],
     }
 
-    let mut codepoints : Vec<u8> = vec![];
-    let mut imagedata : Vec<u8> = vec![];
-
-    for file in utils::list_tiles(&args.input)?.filter_map(Result::ok) {
-        let codepoint = utils::parse_codepoint_from_filename(&file.to_string_lossy())?;
-        codepoints.push(codepoint);
-
-        match utils::decode_png(&file) {
-            Ok(bytes) => imagedata.extend(bytes),
-            Err(e) => {
-                println!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e);
-                exit(1);
-            }
-        }
-    }
+    let imagedata = utils::create_font_data(&args.input)?;
 
     if args.compress {
         utils::write_compressed(imagedata, &target_file)?;
@@ -84,21 +70,7 @@ fn main_append(args: Opt) -> quicli::prelude::Result<()> {
         }
     }
 
-    let mut codepoints : Vec<u8> = vec![];
-    let mut imagedata : Vec<u8> = vec![];
-
-    for file in utils::list_tiles(&args.input)?.filter_map(Result::ok) {
-        let codepoint = utils::parse_codepoint_from_filename(&file.to_string_lossy())?;
-        codepoints.push(codepoint);
-
-        match utils::decode_png(&file) {
-            Ok(bytes) => imagedata.extend(bytes),
-            Err(e) => {
-                println!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e);
-                exit(1);
-            }
-        }
-    }
+    let imagedata = utils::create_font_data(&args.input)?;
 
     let mut system_dat_data = vec![];
     File::open(&args.target)?.read_to_end(&mut system_dat_data)?;

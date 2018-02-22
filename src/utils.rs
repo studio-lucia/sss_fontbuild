@@ -121,6 +121,25 @@ pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
     return Ok(output_bytes);
 }
 
+pub fn create_font_data(input_dir : &PathBuf) -> Result<Vec<u8>, FontCreationError> {
+    let mut codepoints : Vec<u8> = vec![];
+    let mut imagedata : Vec<u8> = vec![];
+
+    for file in list_tiles(&input_dir)?.filter_map(Result::ok) {
+        let codepoint = parse_codepoint_from_filename(&file.to_string_lossy())?;
+        codepoints.push(codepoint);
+
+        match decode_png(&file) {
+            Ok(bytes) => imagedata.extend(bytes),
+            Err(e) => {
+                return Err(FontCreationError::new(format!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e)));
+            }
+        }
+    }
+
+    return Ok(imagedata);
+}
+
 pub fn parse_codepoint_from_filename(filename : &str) -> Result<u8, FontCreationError> {
     let filename = String::from(filename);
     let re = Regex::new(r"(\d*)\.png$").unwrap();
