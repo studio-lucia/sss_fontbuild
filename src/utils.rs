@@ -185,12 +185,16 @@ pub fn insert_data_into_file(mut data: Vec<u8>, target_data: Vec<u8>, game: Game
         Ok(d) => compressed = d,
         Err(e) => return Err(FontCreationError::new(format!("{}", e))),
     }
+    // Write the header then append the data immediately after
+    let mut compressed_with_header = sega_cmp::create_header(data.len() as i32, sega_cmp::Size::Byte);
+    compressed_with_header.append(&mut compressed);
+
     // Compressed size also has to match the original, and almost certainly needs padding
-    compressed.resize(game.font_len_compressed() as usize, 0);
+    compressed_with_header.resize(game.font_len_compressed() as usize, 0);
     let mut new_data = target_data.clone();
     // We ignore the latter half of the clone entirely
     new_data.split_off(game.font_start_address() as usize);
-    new_data.append(&mut compressed);
+    new_data.append(&mut compressed_with_header);
     let mut antecedent = target_data.clone().split_off((game.font_start_address() + game.font_len_compressed()) as usize);
     new_data.append(&mut antecedent);
     assert_eq!(new_data.len(), game.system_dat_size() as usize);
