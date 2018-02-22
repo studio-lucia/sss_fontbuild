@@ -14,7 +14,7 @@ use regex::Regex;
 
 extern crate sega_cmp;
 
-pub fn list_tiles(input_dir : &PathBuf) -> Result<Paths, FontCreationError> {
+pub fn list_tiles(input_dir: &PathBuf) -> Result<Paths, FontCreationError> {
     if !input_dir.exists() {
         return Err(FontCreationError::new(format!("Directory does not exist: {}", input_dir.to_string_lossy())));
     }
@@ -24,7 +24,7 @@ pub fn list_tiles(input_dir : &PathBuf) -> Result<Paths, FontCreationError> {
     }
 }
 
-fn reverse_chunk(input : &[u8]) -> Vec<u8> {
+fn reverse_chunk(input: &[u8]) -> Vec<u8> {
     let mut v = vec![];
     v.extend(input);
     v.reverse();
@@ -32,7 +32,7 @@ fn reverse_chunk(input : &[u8]) -> Vec<u8> {
     return v;
 }
 
-fn collapse_bits(bytes : &[u8]) -> Result<u8, FontCreationError> {
+fn collapse_bits(bytes: &[u8]) -> Result<u8, FontCreationError> {
     if !bytes.len() == 8 {
         return Err(FontCreationError::new(format!("Input must be 8 bytes long ({} elements provided)", bytes.len())));
     }
@@ -52,7 +52,7 @@ fn collapse_bits(bytes : &[u8]) -> Result<u8, FontCreationError> {
     return Ok(result);
 }
 
-fn rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
+fn rgb_to_2bit(bytes: &[u8]) -> Vec<u8> {
     let bytes_vec = bytes.to_vec();
     if bytes_vec == vec![217, 217, 217] || bytes_vec == vec![216, 216, 216] {
         return Vec::from(BITS_GREY.iter().as_slice().clone());
@@ -65,7 +65,7 @@ fn rgb_to_2bit(bytes : &[u8]) -> Vec<u8> {
     }
 }
 
-pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
+pub fn decode_png(input: &PathBuf) -> Result<Vec<u8>, io::Error> {
     let decoder = png::Decoder::new(File::open(&input)?);
     let (info, mut reader) = decoder.read_info()?;
     if info.height != 16 || !(info.width == 8 || info.width == 16) {
@@ -121,7 +121,7 @@ pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
     return Ok(output_bytes);
 }
 
-pub fn create_font_data(input_dir : &PathBuf) -> Result<Vec<u8>, FontCreationError> {
+pub fn create_font_data(input_dir: &PathBuf) -> Result<Vec<u8>, FontCreationError> {
     let mut codepoints : Vec<u8> = vec![];
     let mut imagedata : Vec<u8> = vec![];
 
@@ -140,7 +140,7 @@ pub fn create_font_data(input_dir : &PathBuf) -> Result<Vec<u8>, FontCreationErr
     return Ok(imagedata);
 }
 
-pub fn parse_codepoint_from_filename(filename : &str) -> Result<u8, FontCreationError> {
+pub fn parse_codepoint_from_filename(filename: &str) -> Result<u8, FontCreationError> {
     let filename = String::from(filename);
     let re = Regex::new(r"(\d*)\.png$").unwrap();
     if !re.is_match(&filename) {
