@@ -7,6 +7,7 @@ use std::process::exit;
 #[macro_use] extern crate quicli;
 use quicli::prelude::*;
 // Import this here to clobber quicli's custom Result with the default one
+#[allow(unused_imports)]
 use std::result::Result;
 
 extern crate sss_fontbuild;
