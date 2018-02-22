@@ -121,6 +121,25 @@ pub fn decode_png(input : &PathBuf) -> Result<Vec<u8>, io::Error> {
     return Ok(output_bytes);
 }
 
+pub fn create_font_data(input_dir : &PathBuf) -> Result<Vec<u8>, FontCreationError> {
+    let mut codepoints : Vec<u8> = vec![];
+    let mut imagedata : Vec<u8> = vec![];
+
+    for file in list_tiles(&input_dir)?.filter_map(Result::ok) {
+        let codepoint = parse_codepoint_from_filename(&file.to_string_lossy())?;
+        codepoints.push(codepoint);
+
+        match decode_png(&file) {
+            Ok(bytes) => imagedata.extend(bytes),
+            Err(e) => {
+                return Err(FontCreationError::new(format!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e)));
+            }
+        }
+    }
+
+    return Ok(imagedata);
+}
+
 pub fn parse_codepoint_from_filename(filename : &str) -> Result<u8, FontCreationError> {
     let filename = String::from(filename);
     let re = Regex::new(r"(\d*)\.png$").unwrap();
@@ -150,4 +169,49 @@ pub fn write_uncompressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<
     target_file.write_all(&imagedata)?;
 
     return Ok(());
+}
+
+pub fn insert_data_into_file(mut data: Vec<u8>, target_data: Vec<u8>, game: Game) -> Result<Vec<u8>, FontCreationError> {
+    let dat_size;
+    let start_index;
+    let size_uncompressed;
+    let size_compressed;
+    match game {
+        Game::SSS => {
+            dat_size          = SSS_SYSTEM_DAT_SIZE;
+            start_index       = SSS_FONT_START;
+            size_uncompressed = SSS_FONT_LEN_UNCOMPRESSED;
+            size_compressed   = SSS_FONT_LEN_COMPRESSED;
+        },
+        Game::SSSC => {
+            dat_size          = SSSC_SYSTEM_DAT_SIZE;
+            start_index       = SSSC_FONT_START;
+            size_uncompressed = SSSC_FONT_LEN_UNCOMPRESSED;
+            size_compressed   = SSSC_FONT_LEN_COMPRESSED;
+        },
+    }
+    assert_eq!(target_data.len(), dat_size as usize);
+
+    // Uncompressed size should match the original
+    if data.len() > size_uncompressed as usize {
+        return Err(FontCreationError::new(format!("Requested font is too large for SYSTEM.DAT (provided size {}, max size {})", data.len(), size_uncompressed)));
+    }
+    data.resize(size_uncompressed as usize, 0);
+
+    let mut compressed;
+    match sega_cmp::compress(&data, sega_cmp::Size::Byte) {
+        Ok(d) => compressed = d,
+        Err(e) => return Err(FontCreationError::new(format!("{}", e))),
+    }
+    // Compressed size also has to match the original, and almost certainly needs padding
+    compressed.resize(size_compressed as usize, 0);
+    let mut new_data = target_data.clone();
+    // We ignore the latter half of the clone entirely
+    new_data.split_off(start_index as usize);
+    new_data.append(&mut compressed);
+    let mut antecedent = target_data.clone().split_off((start_index + size_compressed) as usize);
+    new_data.append(&mut antecedent);
+    assert_eq!(new_data.len(), dat_size as usize);
+
+    return Ok((new_data));
 }
