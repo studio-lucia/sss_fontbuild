@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io;
+use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
@@ -13,6 +14,21 @@ extern crate png;
 use regex::Regex;
 
 extern crate sega_cmp;
+
+pub fn read_append_data(filename: Option<PathBuf>) -> Result<Vec<u8>, io::Error> {
+    let mut append_data : Vec<u8>;
+    match filename {
+        Some(append) => {
+            let append_file = File::open(&append)?;
+            let mut buf_reader = BufReader::new(append_file);
+            append_data = vec![];
+            buf_reader.read_to_end(&mut append_data)?;
+        },
+        None => append_data = vec![],
+    }
+
+    return Ok(append_data);
+}
 
 pub fn list_tiles(input_dir: &PathBuf) -> Result<Paths, FontCreationError> {
     if !input_dir.exists() {
@@ -171,7 +187,7 @@ pub fn write_uncompressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<
     return Ok(());
 }
 
-pub fn insert_data_into_file(mut data: Vec<u8>, target_data: Vec<u8>, game: Game) -> Result<Vec<u8>, FontCreationError> {
+pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data: Vec<u8>, game: Game) -> Result<Vec<u8>, FontCreationError> {
     assert_eq!(target_data.len(), game.system_dat_size() as usize);
 
     // Uncompressed size should match the original
@@ -188,8 +204,14 @@ pub fn insert_data_into_file(mut data: Vec<u8>, target_data: Vec<u8>, game: Game
     // Write the header then append the data immediately after
     let mut compressed_with_header = sega_cmp::create_header(data.len() as i32, sega_cmp::Size::Byte);
     compressed_with_header.append(&mut compressed);
+    let combined_size = extra_data.len() + compressed_with_header.len();
+    let max_append_size = game.font_len_compressed() as usize - compressed_with_header.len();
+    if combined_size > game.font_len_compressed() as usize {
+        return Err(FontCreationError::new(format!("Append data is too large (max for this font is {} bytes, provided data was {})", max_append_size, combined_size)));
+    }
 
-    // Compressed size also has to match the original, and almost certainly needs padding
+    // Add the append data, then resize to the target size
+    compressed_with_header.append(&mut extra_data.clone());
     compressed_with_header.resize(game.font_len_compressed() as usize, 0);
     let mut new_data = target_data.clone();
     // We ignore the latter half of the clone entirely

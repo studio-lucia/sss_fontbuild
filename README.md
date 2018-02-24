@@ -29,6 +29,10 @@ Options:
 $ sss_fontbuild path_to_font_files SYSTEM.DAT --insert
 ```
 
+Options:
+
+* `--append`: As described above.
+
 ## Installing
 
 To install from source, just run `make install`; this will install the binary to `/usr/local`. You can also specify a different location to install to by specifying the `PREFIX` option, such as `make install PREFIX=/opt/local`.
