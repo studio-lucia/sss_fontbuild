@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::exit;
@@ -35,16 +34,7 @@ struct Opt {
 fn main_create(args: Opt) -> quicli::prelude::Result<()> {
     let mut target_file = File::create(&args.target)?;
 
-    let mut append_data : Vec<u8>;
-    match args.append {
-        Some(append) => {
-            let append_file = File::open(&append)?;
-            let mut buf_reader = BufReader::new(append_file);
-            append_data = vec![];
-            buf_reader.read_to_end(&mut append_data)?;
-        },
-        None => append_data = vec![],
-    }
+    let append_data = utils::read_append_data(args.append)?;
 
     let imagedata = utils::create_font_data(&args.input)?;
 
@@ -73,10 +63,12 @@ fn main_insert(args: Opt) -> quicli::prelude::Result<()> {
 
     let imagedata = utils::create_font_data(&args.input)?;
 
+    let append_data = utils::read_append_data(args.append)?;
+
     let mut system_dat_data = vec![];
     File::open(&args.target)?.read_to_end(&mut system_dat_data)?;
 
-    let altered_data = utils::insert_data_into_file(imagedata, system_dat_data, game)?;
+    let altered_data = utils::insert_data_into_file(imagedata, append_data, system_dat_data, game)?;
 
     let mut target_file = File::create(&args.target)?;
     target_file.write_all(&altered_data)?;
