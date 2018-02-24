@@ -209,6 +209,9 @@ pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data
     if combined_size > game.font_len_compressed() as usize {
         return Err(FontCreationError::new(format!("Append data is too large (max for this font is {} bytes, provided data was {})", max_append_size, combined_size)));
     }
+    if extra_data.len() > 0 {
+        println!("Append data address: 0x{:X}", game.font_start_address() as usize + compressed_with_header.len());
+    }
 
     // Add the append data, then resize to the target size
     compressed_with_header.append(&mut extra_data.clone());
