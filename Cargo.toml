@@ -1,6 +1,8 @@
 [package]
 name = "sss_fontbuild"
 description = "Rebuild font files for Lunar: Silver Star Story"
+homepage = "https://github.com/studio-lucia/sss_fontbuild"
+repository = "https://github.com/studio-lucia/sss_fontbuild"
 version = "1.0.0"
 authors = ["Misty De Meo <mistydemeo@gmail.com>"]
 license = "GPL-3.0"
