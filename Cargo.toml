@@ -3,6 +3,7 @@ name = "sss_fontbuild"
 description = "Rebuild font files for Lunar: Silver Star Story"
 version = "0.1.0"
 authors = ["Misty De Meo <mistydemeo@gmail.com>"]
+license = "GPL-3.0"
 
 [dependencies]
 glob = "0.2.11"
