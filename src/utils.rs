@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
@@ -171,7 +170,7 @@ pub fn write_compressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<()
     match sega_cmp::compress(&imagedata, sega_cmp::Size::Byte) {
         Ok(d) => compressed = d,
         Err(e) => return Err(io::Error::new(io::ErrorKind::Other,
-                                                 e.description())),
+                                                 e.to_string())),
     }
 
     target_file.write_all(&header)?;
