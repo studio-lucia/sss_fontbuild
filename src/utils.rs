@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io;
-use std::io::BufReader;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::PathBuf;
 
 use crate::consts::*;
@@ -13,14 +13,14 @@ use regex::Regex;
 use sega_cmp;
 
 pub fn read_append_data(filename: Option<PathBuf>) -> Result<Vec<u8>, io::Error> {
-    let mut append_data : Vec<u8>;
+    let mut append_data: Vec<u8>;
     match filename {
         Some(append) => {
             let append_file = File::open(&append)?;
             let mut buf_reader = BufReader::new(append_file);
             append_data = vec![];
             buf_reader.read_to_end(&mut append_data)?;
-        },
+        }
         None => append_data = vec![],
     }
 
@@ -29,11 +29,19 @@ pub fn read_append_data(filename: Option<PathBuf>) -> Result<Vec<u8>, io::Error>
 
 pub fn list_tiles(input_dir: &PathBuf) -> Result<Paths, FontCreationError> {
     if !input_dir.exists() {
-        return Err(FontCreationError::new(format!("Directory does not exist: {}", input_dir.to_string_lossy())));
+        return Err(FontCreationError::new(format!(
+            "Directory does not exist: {}",
+            input_dir.to_string_lossy()
+        )));
     }
     match glob(&input_dir.join("*.png").to_string_lossy()) {
         Ok(glob) => return Ok(glob),
-        Err(e) => return Err(FontCreationError::new(format!("Error listing files: {}", e))),
+        Err(e) => {
+            return Err(FontCreationError::new(format!(
+                "Error listing files: {}",
+                e
+            )))
+        }
     }
 }
 
@@ -47,7 +55,10 @@ fn reverse_chunk(input: &[u8]) -> Vec<u8> {
 
 fn collapse_bits(bytes: &[u8]) -> Result<u8, FontCreationError> {
     if !bytes.len() == 8 {
-        return Err(FontCreationError::new(format!("Input must be 8 bytes long ({} elements provided)", bytes.len())));
+        return Err(FontCreationError::new(format!(
+            "Input must be 8 bytes long ({} elements provided)",
+            bytes.len()
+        )));
     }
     let mut result = 0;
     for (i, byte) in bytes.iter().enumerate() {
@@ -58,7 +69,10 @@ fn collapse_bits(bytes: &[u8]) -> Result<u8, FontCreationError> {
             0 => result |= mask,
             1 => result &= !mask,
             _ => {
-                return Err(FontCreationError::new(format!("Bits must be either 0 or 1 (value was {})", *byte)));
+                return Err(FontCreationError::new(format!(
+                    "Bits must be either 0 or 1 (value was {})",
+                    *byte
+                )));
             }
         }
     }
@@ -82,49 +96,64 @@ pub fn decode_png(input: &PathBuf) -> Result<Vec<u8>, io::Error> {
     let decoder = png::Decoder::new(File::open(&input)?);
     let (info, mut reader) = decoder.read_info()?;
     if info.height != 16 || !(info.width == 8 || info.width == 16) {
-        return Err(io::Error::new(io::ErrorKind::InvalidData,
-            format!("Incorrect tile size {}x{} (expected 8x16 or 16x16)", info.width, info.height)));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!(
+                "Incorrect tile size {}x{} (expected 8x16 or 16x16)",
+                info.width, info.height
+            ),
+        ));
     }
     let mut buf = vec![0; info.buffer_size()];
     reader.next_frame(&mut buf)?;
 
     match info.color_type {
         // RGB is fine as-is
-        png::ColorType::RGB => {},
+        png::ColorType::RGB => {}
         // Drop the alpha channel
         png::ColorType::RGBA => {
             buf = buf
                 // In every set of four bytes, the fourth is the alpha
-                .chunks(4).flat_map(|a| vec![a[0], a[1], a[2]])
+                .chunks(4)
+                .flat_map(|a| vec![a[0], a[1], a[2]])
                 .collect::<Vec<u8>>();
-        },
+        }
         _ => {
-            return Err(io::Error::new(io::ErrorKind::InvalidData,
-                format!("Invalid colour format - only RGB is supported")));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid colour format - only RGB is supported"),
+            ));
         }
     }
 
     // Match R,G,B pixel values to the 2-bit values that Lunar uses
-    let bit_values : Vec<u8> = buf.chunks(3)
-       .flat_map(rgb_to_2bit)
-       .collect::<Vec<u8>>()
-       // Flip each quarter of the image
-       .chunks(128).rev().flat_map(|a| a).cloned()
-       .collect::<Vec<u8>>()
-       // Flip the image vertically; a row of 32 bits is 16 pixels
-       .chunks(32).rev().flat_map(|a| a).cloned()
-       .collect::<Vec<u8>>()
-       // Flip each line horizontally
-       .chunks(32).flat_map(|slice| slice.chunks(2).rev().flat_map(|a| a).cloned())
-       .collect();
+    let bit_values: Vec<u8> = buf
+        .chunks(3)
+        .flat_map(rgb_to_2bit)
+        .collect::<Vec<u8>>()
+        // Flip each quarter of the image
+        .chunks(128)
+        .rev()
+        .flat_map(|a| a)
+        .cloned()
+        .collect::<Vec<u8>>()
+        // Flip the image vertically; a row of 32 bits is 16 pixels
+        .chunks(32)
+        .rev()
+        .flat_map(|a| a)
+        .cloned()
+        .collect::<Vec<u8>>()
+        // Flip each line horizontally
+        .chunks(32)
+        .flat_map(|slice| slice.chunks(2).rev().flat_map(|a| a).cloned())
+        .collect();
     // Take our big Vec of bit values and collapse that down into bytes
-    let mut output_bytes : Vec<u8> = bit_values.chunks(8)
-       .flat_map(collapse_bits)
-       .collect();
+    let mut output_bytes: Vec<u8> = bit_values.chunks(8).flat_map(collapse_bits).collect();
 
     // Reverse the horizontal order of pixels.
     // The order returned by a given PNG is the opposite of what Lunar expects.
-    output_bytes = output_bytes.chunks(info.width as usize)
+    output_bytes = output_bytes
+        .chunks(info.width as usize)
         .flat_map(reverse_chunk)
         .collect::<Vec<u8>>();
 
@@ -135,8 +164,8 @@ pub fn decode_png(input: &PathBuf) -> Result<Vec<u8>, io::Error> {
 }
 
 pub fn create_font_data(input_dir: &PathBuf) -> Result<Vec<u8>, FontCreationError> {
-    let mut codepoints : Vec<u8> = vec![];
-    let mut imagedata : Vec<u8> = vec![];
+    let mut codepoints: Vec<u8> = vec![];
+    let mut imagedata: Vec<u8> = vec![];
 
     for file in list_tiles(&input_dir)?.filter_map(Result::ok) {
         let codepoint = parse_codepoint_from_filename(&file.to_string_lossy())?;
@@ -145,7 +174,11 @@ pub fn create_font_data(input_dir: &PathBuf) -> Result<Vec<u8>, FontCreationErro
         match decode_png(&file) {
             Ok(bytes) => imagedata.extend(bytes),
             Err(e) => {
-                return Err(FontCreationError::new(format!("Unable to parse image data for file {}!\n{}", &file.to_string_lossy(), e)));
+                return Err(FontCreationError::new(format!(
+                    "Unable to parse image data for file {}!\n{}",
+                    &file.to_string_lossy(),
+                    e
+                )));
             }
         }
     }
@@ -157,7 +190,10 @@ pub fn parse_codepoint_from_filename(filename: &str) -> Result<u8, FontCreationE
     let filename = String::from(filename);
     let re = Regex::new(r"(\d*)\.png$").unwrap();
     if !re.is_match(&filename) {
-        return Err(FontCreationError::new(format!("Unable to parse codepoint from filename: {}", filename)));
+        return Err(FontCreationError::new(format!(
+            "Unable to parse codepoint from filename: {}",
+            filename
+        )));
     }
 
     let captures = re.captures(&filename).unwrap();
@@ -166,11 +202,10 @@ pub fn parse_codepoint_from_filename(filename: &str) -> Result<u8, FontCreationE
 
 pub fn write_compressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<(), io::Error> {
     let header = sega_cmp::create_header(imagedata.len() as i32, sega_cmp::Size::Byte);
-    let compressed; 
+    let compressed;
     match sega_cmp::compress(&imagedata, sega_cmp::Size::Byte) {
         Ok(d) => compressed = d,
-        Err(e) => return Err(io::Error::new(io::ErrorKind::Other,
-                                                 e.to_string())),
+        Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
     }
 
     target_file.write_all(&header)?;
@@ -184,12 +219,21 @@ pub fn write_uncompressed(imagedata: Vec<u8>, mut target_file: &File) -> Result<
     return Ok(());
 }
 
-pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data: Vec<u8>, game: Game) -> Result<Vec<u8>, FontCreationError> {
+pub fn insert_data_into_file(
+    mut data: Vec<u8>,
+    extra_data: Vec<u8>,
+    target_data: Vec<u8>,
+    game: Game,
+) -> Result<Vec<u8>, FontCreationError> {
     assert_eq!(target_data.len(), game.system_dat_size() as usize);
 
     // Uncompressed size should match the original
     if data.len() > game.font_len_uncompressed() as usize {
-        return Err(FontCreationError::new(format!("Requested font is too large for SYSTEM.DAT (provided size {}, max size {})", data.len(), game.font_len_uncompressed())));
+        return Err(FontCreationError::new(format!(
+            "Requested font is too large for SYSTEM.DAT (provided size {}, max size {})",
+            data.len(),
+            game.font_len_uncompressed()
+        )));
     }
     data.resize(game.font_len_uncompressed() as usize, 0);
 
@@ -199,15 +243,22 @@ pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data
         Err(e) => return Err(FontCreationError::new(format!("{}", e))),
     }
     // Write the header then append the data immediately after
-    let mut compressed_with_header = sega_cmp::create_header(data.len() as i32, sega_cmp::Size::Byte);
+    let mut compressed_with_header =
+        sega_cmp::create_header(data.len() as i32, sega_cmp::Size::Byte);
     compressed_with_header.append(&mut compressed);
     let combined_size = extra_data.len() + compressed_with_header.len();
     let max_append_size = game.font_len_compressed() as usize - compressed_with_header.len();
     if combined_size > game.font_len_compressed() as usize {
-        return Err(FontCreationError::new(format!("Append data is too large (max for this font is {} bytes, provided data was {})", max_append_size, combined_size)));
+        return Err(FontCreationError::new(format!(
+            "Append data is too large (max for this font is {} bytes, provided data was {})",
+            max_append_size, combined_size
+        )));
     }
     if extra_data.len() > 0 {
-        println!("Append data address: 0x{:X}", game.font_start_address() as usize + compressed_with_header.len());
+        println!(
+            "Append data address: 0x{:X}",
+            game.font_start_address() as usize + compressed_with_header.len()
+        );
     }
 
     // Add the append data, then resize to the target size
@@ -217,7 +268,9 @@ pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data
     // We ignore the latter half of the clone entirely
     new_data.split_off(game.font_start_address() as usize);
     new_data.append(&mut compressed_with_header);
-    let mut antecedent = target_data.clone().split_off((game.font_start_address() + game.font_len_compressed()) as usize);
+    let mut antecedent = target_data
+        .clone()
+        .split_off((game.font_start_address() + game.font_len_compressed()) as usize);
     new_data.append(&mut antecedent);
     assert_eq!(new_data.len(), game.system_dat_size() as usize);
 

@@ -3,7 +3,8 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::exit;
 
-#[macro_use] extern crate quicli;
+#[macro_use]
+extern crate quicli;
 use quicli::prelude::*;
 // Import this here to clobber quicli's custom Result with the default one
 #[allow(unused_imports)]
@@ -18,15 +19,24 @@ struct Opt {
     input: PathBuf,
     #[structopt(help = "Font file to write to", parse(from_os_str))]
     target: PathBuf,
-    #[structopt(short = "i", long = "insert",
-                help = "Insert font into the game's SYSTEM.DAT")]
+    #[structopt(
+        short = "i",
+        long = "insert",
+        help = "Insert font into the game's SYSTEM.DAT"
+    )]
     insert: bool,
-    #[structopt(short = "a", long = "append",
-                help = "Append extra data to the end of the file",
-                parse(from_os_str))]
+    #[structopt(
+        short = "a",
+        long = "append",
+        help = "Append extra data to the end of the file",
+        parse(from_os_str)
+    )]
     append: Option<PathBuf>,
-    #[structopt(short = "c", long = "compress",
-                help = "Compress the generated data using Sega's CMP")]
+    #[structopt(
+        short = "c",
+        long = "compress",
+        help = "Compress the generated data using Sega's CMP"
+    )]
     compress: bool,
 }
 
@@ -51,7 +61,7 @@ fn main_insert(args: Opt) -> quicli::prelude::Result<()> {
     let game;
     let target_size = args.target.metadata()?.len();
     match target_size {
-        SSS_SYSTEM_DAT_SIZE  => game = Game::SSS,
+        SSS_SYSTEM_DAT_SIZE => game = Game::SSS,
         SSSC_SYSTEM_DAT_SIZE => game = Game::SSSC,
         _ => {
             println!("Couldn't recognize provided SYSTEM.DAT file!");

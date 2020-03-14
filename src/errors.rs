@@ -1,5 +1,5 @@
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct FontCreationError {
@@ -8,9 +8,7 @@ pub struct FontCreationError {
 
 impl FontCreationError {
     pub fn new(message: String) -> FontCreationError {
-        return FontCreationError {
-            message: message,
-        }
+        return FontCreationError { message: message };
     }
 }
 
