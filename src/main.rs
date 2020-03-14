@@ -3,8 +3,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::exit;
 
-#[macro_use]
-extern crate quicli;
+use quicli::main;
 use quicli::prelude::*;
 // Import this here to clobber quicli's custom Result with the default one
 #[allow(unused_imports)]
