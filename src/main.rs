@@ -9,7 +9,6 @@ use quicli::prelude::*;
 #[allow(unused_imports)]
 use std::result::Result;
 
-extern crate sss_fontbuild;
 use sss_fontbuild::consts::*;
 use sss_fontbuild::utils;
 

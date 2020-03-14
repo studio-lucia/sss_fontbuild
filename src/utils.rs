@@ -5,16 +5,13 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use consts::*;
-use errors::FontCreationError;
+use crate::consts::*;
+use crate::errors::FontCreationError;
 
 use glob::{glob, Paths};
-
-extern crate png;
-
+use png;
 use regex::Regex;
-
-extern crate sega_cmp;
+use sega_cmp;
 
 pub fn read_append_data(filename: Option<PathBuf>) -> Result<Vec<u8>, io::Error> {
     let mut append_data : Vec<u8>;
