@@ -222,5 +222,5 @@ pub fn insert_data_into_file(mut data: Vec<u8>, extra_data: Vec<u8>, target_data
     new_data.append(&mut antecedent);
     assert_eq!(new_data.len(), game.system_dat_size() as usize);
 
-    return Ok((new_data));
+    return Ok(new_data);
 }
